@@ -78,7 +78,7 @@ def convert_df_to_excel(df):
 # Main App
 ###############################################################################
 
-st.title("GSC Keyword Categorizer")
+st.title("GSC Scorecard")
 
 # Sidebar: Retrieve GSC credentials from Streamlit secrets
 client_secret = st.secrets["installed"]["client_secret"]
