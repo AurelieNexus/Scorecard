@@ -16,7 +16,7 @@ import openai
 
 st.set_page_config(
     layout="centered", 
-    page_title="GSC Keyword Categorizer", 
+    page_title="GSC Scorecard", 
     page_icon="🔌📝"
 )
 
