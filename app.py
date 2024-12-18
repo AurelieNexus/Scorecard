@@ -184,7 +184,7 @@ if st.session_state.gsc_token_received:
             # Sélection de la propriété Web
             selected_site = st.selectbox("Sélectionnez la propriété Web", st.session_state["site_urls"])
 
-            # Définition des dimensions principales et imbriquées
+            # Sélection multiple des dimensions
             dimensions = st.multiselect(
                 "Dimensions",
                 ["query", "page", "date", "country", "device", "searchAppearance"],
@@ -243,14 +243,18 @@ if st.session_state.gsc_token_received:
                         dimensions,
                     )
 
+                    # Afficher les colonnes disponibles pour le débogage
+                    st.write("Colonnes disponibles dans le DataFrame :", df.columns.tolist())
+
                     # Vérification si les données sont disponibles
                     if df.empty:
                         st.warning("🚨 Aucune donnée disponible. Veuillez affiner vos critères de recherche.")
                     else:
                         st.success(f"✅ Données récupérées avec succès ! Nombre total de lignes : {len(df)}")
 
-                        # Extraction des données principales
+                        # Vérification des dimensions sélectionnées
                         if all(dim in df.columns for dim in dimensions):
+                            # Extraction des données principales
                             top_items_df = df.groupby(dimensions)[selected_metrics].sum().reset_index()
 
                             # Trier par la première métrique sélectionnée
