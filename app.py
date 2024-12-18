@@ -253,7 +253,10 @@ if st.session_state.gsc_token_received:
                         st.success(f"✅ Données récupérées avec succès ! Nombre total de lignes : {len(df)}")
 
                         # Vérification des dimensions sélectionnées
-                        if all(dim in df.columns for dim in dimensions):
+                        dimensions_absentes = [dim for dim in dimensions if dim not in df.columns]
+                        if dimensions_absentes:
+                            st.warning(f"🚨 Les dimensions suivantes ne sont pas présentes : {', '.join(dimensions_absentes)}")
+                        else:
                             # Extraction des données principales
                             top_items_df = df.groupby(dimensions)[selected_metrics].sum().reset_index()
 
@@ -264,8 +267,6 @@ if st.session_state.gsc_token_received:
                                 st.dataframe(top_items_df)
                             else:
                                 st.warning("🚨 Aucune métrique sélectionnée.")
-                        else:
-                            st.warning("🚨 Les dimensions sélectionnées ne sont pas présentes dans les données.")
                 except Exception as e:
                     st.error(f"Une erreur est survenue lors de la récupération des données : {str(e)}")
 else:
