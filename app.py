@@ -258,6 +258,7 @@ if st.session_state.gsc_token_received:
                                 top_items_df = top_items_df.sort_values(by=selected_metrics[0], ascending=False).head(TOP_N_RESULTS)
                                 st.write(f"### Top {TOP_N_RESULTS} éléments basés sur {selected_metrics[0].capitalize()}")
                                 st.dataframe(top_items_df)
+                                st.write("Colonnes disponibles dans le DataFrame :", df.columns.tolist())
                             else:
                                 st.warning("🚨 Aucune métrique sélectionnée.")
                         else:
