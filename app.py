@@ -192,7 +192,7 @@ if st.session_state.gsc_token_received:
             with col1:
                 dimension = st.selectbox(
                     "Dimension principale",
-                    ("query",),
+                    ("query", "page", "date", "country", "device", "searchAppearance"),
                     help="Dimension principale pour la requête.",
                 )
             with col2:
