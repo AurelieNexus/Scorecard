@@ -265,20 +265,20 @@ if st.session_state.gsc_token_received:
                             help="Métrique pour la sélection des mots-clés principaux.",
                         )
 
-                        # Extraction des mots-clés principaux
-                        if 'query' in df.columns:
-                            top_keywords_df = (
-                                df.groupby('query')[metric]
+                        # Extraction des mots-clés (ou données) principaux selon la dimension principale sélectionnée
+                        if dimension in df.columns:
+                            top_items_df = (
+                                df.groupby(dimension)[metric]
                                 .sum()
                                 .reset_index()
                                 .sort_values(by=metric, ascending=False)
                                 .head(TOP_N_KEYWORDS)
                             )
-                            top_keywords = top_keywords_df['query'].tolist()
-                            st.write(f"### Top {TOP_N_KEYWORDS} mots-clés basés sur {metric.capitalize()}")
-                            st.dataframe(top_keywords_df)
+                            top_items = top_items_df[dimension].tolist()
+                            st.write(f"### Top {TOP_N_KEYWORDS} éléments basés sur {metric.capitalize()}")
+                            st.dataframe(top_items_df)
                         else:
-                            st.warning("🚨 La dimension 'query' n'est pas présente dans les données.")
+                            st.warning(f"🚨 La dimension '{dimension}' n'est pas présente dans les données.")
                 except Exception as e:
                     st.error(f"Une erreur est survenue lors de la récupération des données : {str(e)}")
 else:
