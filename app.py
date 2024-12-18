@@ -25,23 +25,22 @@ st.set_page_config(
 ###############################################################################
 
 ROW_CAP = 25000  # Limite de lignes pour les requêtes GSC
-TOP_N_KEYWORDS = 50  # Nombre de mots-clés à afficher
+TOP_N_RESULTS = 50  # Nombre d'éléments à afficher
 
 ###############################################################################
 # Fonctions auxiliaires
 ###############################################################################
 
-def get_search_console_data(webproperty, search_type, selected_days, dimension, nested_dimension, nested_dimension_2):
+def get_search_console_data(webproperty, search_type, selected_days, dimensions):
     """
     Récupère les données de la Google Search Console en fonction des paramètres spécifiés.
     """
-    q = webproperty.query.search_type(search_type).range("today", days=selected_days).dimension(dimension)
-
-    if nested_dimension != "none":
-        q = q.dimension(nested_dimension)
-    if nested_dimension_2 != "none":
-        q = q.dimension(nested_dimension_2)
-
+    q = webproperty.query.search_type(search_type).range("today", days=selected_days)
+    
+    for dim in dimensions:
+        if dim != "none":
+            q = q.dimension(dim)
+    
     q = q.limit(ROW_CAP)
     report = q.get().to_dataframe()
     return report
@@ -176,7 +175,6 @@ if st.session_state.gsc_token_received:
         except Exception as e:
             st.error(f"Une erreur est survenue lors de la récupération des jetons : {str(e)}")
     else:
-        # Crédentiels déjà obtenus, aucune action nécessaire
         pass
 
     # Vérification que les crédentiels sont disponibles
@@ -186,27 +184,13 @@ if st.session_state.gsc_token_received:
             # Sélection de la propriété Web
             selected_site = st.selectbox("Sélectionnez la propriété Web", st.session_state["site_urls"])
 
-            # Définition des dimensions
-            col1, col2, col3 = st.columns(3)
-
-            with col1:
-                dimension = st.selectbox(
-                    "Dimension principale",
-                    ("query", "page", "date", "country", "device", "searchAppearance"),
-                    help="Dimension principale pour la requête.",
-                )
-            with col2:
-                nested_dimension = st.selectbox(
-                    "Dimension imbriquée",
-                    ("none", "page", "date", "device", "searchAppearance", "country"),
-                    help="Choisissez une dimension imbriquée.",
-                )
-            with col3:
-                nested_dimension_2 = st.selectbox(
-                    "Seconde dimension imbriquée",
-                    ("none", "page", "date", "device", "searchAppearance", "country"),
-                    help="Choisissez une seconde dimension imbriquée.",
-                )
+            # Définition des dimensions principales et imbriquées
+            dimensions = st.multiselect(
+                "Dimensions",
+                ["query", "page", "date", "country", "device", "searchAppearance"],
+                default=["query"],
+                help="Choisissez une ou plusieurs dimensions pour l'analyse.",
+            )
 
             # Type de recherche
             search_type = st.selectbox(
@@ -234,6 +218,15 @@ if st.session_state.gsc_token_received:
 
             selected_days = timescale_mapping.get(timescale, -30)
 
+            # Sélection des métriques
+            metric_options = ["clicks", "impressions", "ctr", "position"]
+            selected_metrics = st.multiselect(
+                "Sélectionnez les métriques",
+                options=metric_options,
+                default=["clicks"],
+                help="Choisissez une ou plusieurs métriques pour l'analyse.",
+            )
+
             # Bouton pour soumettre et récupérer les données GSC
             submit_gsc_data = st.form_submit_button(label="Fetch GSC Data")
 
@@ -247,9 +240,7 @@ if st.session_state.gsc_token_received:
                         webproperty,
                         search_type,
                         selected_days,
-                        dimension,
-                        nested_dimension,
-                        nested_dimension_2,
+                        dimensions,
                     )
 
                     # Vérification si les données sont disponibles
@@ -258,27 +249,19 @@ if st.session_state.gsc_token_received:
                     else:
                         st.success(f"✅ Données récupérées avec succès ! Nombre total de lignes : {len(df)}")
 
-                        # Sélection de la métrique pour les mots-clés principaux
-                        metric = st.selectbox(
-                            "Sélectionnez la métrique pour les mots-clés principaux",
-                            options=["clicks", "impressions", "ctr", "position"],
-                            help="Métrique pour la sélection des mots-clés principaux.",
-                        )
+                        # Extraction des données principales
+                        if all(dim in df.columns for dim in dimensions):
+                            top_items_df = df.groupby(dimensions)[selected_metrics].sum().reset_index()
 
-                        # Extraction des mots-clés (ou données) principaux selon la dimension principale sélectionnée
-                        if dimension in df.columns:
-                            top_items_df = (
-                                df.groupby(dimension)[metric]
-                                .sum()
-                                .reset_index()
-                                .sort_values(by=metric, ascending=False)
-                                .head(TOP_N_KEYWORDS)
-                            )
-                            top_items = top_items_df[dimension].tolist()
-                            st.write(f"### Top {TOP_N_KEYWORDS} éléments basés sur {metric.capitalize()}")
-                            st.dataframe(top_items_df)
+                            # Trier par la première métrique sélectionnée
+                            if selected_metrics:
+                                top_items_df = top_items_df.sort_values(by=selected_metrics[0], ascending=False).head(TOP_N_RESULTS)
+                                st.write(f"### Top {TOP_N_RESULTS} éléments basés sur {selected_metrics[0].capitalize()}")
+                                st.dataframe(top_items_df)
+                            else:
+                                st.warning("🚨 Aucune métrique sélectionnée.")
                         else:
-                            st.warning(f"🚨 La dimension '{dimension}' n'est pas présente dans les données.")
+                            st.warning("🚨 Les dimensions sélectionnées ne sont pas présentes dans les données.")
                 except Exception as e:
                     st.error(f"Une erreur est survenue lors de la récupération des données : {str(e)}")
 else:
